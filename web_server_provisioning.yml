@@ -1,0 +1,149 @@
+---
+- name: Provision Web Server
+  hosts: all
+  become: yes
+  vars:
+    web_server: "nginx"  # Change to "apache" if you prefer Apache
+    html_file: "index.html"
+    deployment_user: "deployer"
+    slack_webhook_url: "https://hooks.slack.com/services/XXXXX"  # Replace with your webhook URL
+
+  tasks:
+    # Install selected web server
+    - name: Install web server
+      block:
+        - name: Install Nginx
+          apt:
+            name: nginx
+            state: present
+            update_cache: yes
+          when: web_server == "nginx"
+
+        - name: Install Apache
+          apt:
+            name: apache2
+            state: present
+            update_cache: yes
+          when: web_server == "apache"
+      tags: install
+
+    # Copy HTML file to web directory
+    - name: Ensure web directory exists
+      file:
+        path: /var/www/html/
+        state: directory
+        mode: '0755'
+
+    - name: Copy HTML file
+      copy:
+        src: "{{ html_file }}"
+        dest: "/var/www/html/index.html"
+        mode: '0644'
+      tags: content
+
+    # Manage web server service
+    - name: Ensure web server is running and enabled
+      service:
+        name: "{{ 'nginx' if web_server == 'nginx' else 'apache2' }}"
+        state: started
+        enabled: yes
+      tags: service
+
+    # Create deployment user
+    - name: Create deployment user
+      user:
+        name: "{{ deployment_user }}"
+        shell: /bin/bash
+        groups: www-data
+        append: yes
+        generate_ssh_key: yes
+        ssh_key_bits: 2048
+        ssh_key_file: .ssh/id_rsa
+      tags: user
+
+    # Bonus: Slack notification
+    - name: Send Slack notification
+      uri:
+        url: "{{ slack_webhook_url }}"
+        method: POST
+        body_format: json
+        body:
+          text: "Web server provisioning complete on {{ ansible_hostname }}"
+          username: "Ansible Bot"
+          icon_emoji: ":robot_face:"
+      when: slack_webhook_url != "https://hooks.slack.com/services/XXXXX"
+      tags: notification---
+- name: Provision Web Server
+  hosts: all
+  become: yes
+  vars:
+    web_server: "nginx"  # Change to "apache" if you prefer Apache
+    html_file: "index.html"
+    deployment_user: "deployer"
+    slack_webhook_url: "https://hooks.slack.com/services/XXXXX"  # Replace with your webhook URL
+
+  tasks:
+    # Install selected web server
+    - name: Install web server
+      block:
+        - name: Install Nginx
+          apt:
+            name: nginx
+            state: present
+            update_cache: yes
+          when: web_server == "nginx"
+
+        - name: Install Apache
+          apt:
+            name: apache2
+            state: present
+            update_cache: yes
+          when: web_server == "apache"
+      tags: install
+
+    # Copy HTML file to web directory
+    - name: Ensure web directory exists
+      file:
+        path: /var/www/html/
+        state: directory
+        mode: '0755'
+
+    - name: Copy HTML file
+      copy:
+        src: "{{ html_file }}"
+        dest: "/var/www/html/index.html"
+        mode: '0644'
+      tags: content
+
+    # Manage web server service
+    - name: Ensure web server is running and enabled
+      service:
+        name: "{{ 'nginx' if web_server == 'nginx' else 'apache2' }}"
+        state: started
+        enabled: yes
+      tags: service
+
+    # Create deployment user
+    - name: Create deployment user
+      user:
+        name: "{{ deployment_user }}"
+        shell: /bin/bash
+        groups: www-data
+        append: yes
+        generate_ssh_key: yes
+        ssh_key_bits: 2048
+        ssh_key_file: .ssh/id_rsa
+      tags: user
+
+    # Bonus: Slack notification
+    - name: Send Slack notification
+      uri:
+        url: "{{ slack_webhook_url }}"
+        method: POST
+        body_format: json
+        body:
+          text: "Web server provisioning complete on {{ ansible_hostname }}"
+          username: "Ansible Bot"
+          icon_emoji: ":robot_face:"
+      when: slack_webhook_url != "https://hooks.slack.com/services/XXXXX"
+      tags: notification
